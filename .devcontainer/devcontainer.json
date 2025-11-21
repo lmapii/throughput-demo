@@ -1,0 +1,56 @@
+{
+  "name": "throughput-demo",
+  "image": "ghcr.io/zephyrproject-rtos/zephyr-build:main",
+  "remoteUser": "user",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.renderWhitespace": "all",
+        "editor.renderControlCharacters": true,
+        // depending on your rules you might not want to use tabstops, e.g., barr C-coding style
+        "editor.useTabStops": false,
+        "editor.formatOnSave": true,
+        "doxdocgen.file.fileTemplate": "\\file {name}",
+        "doxdocgen.generic.briefTemplate": "\\brief {text}",
+        "doxdocgen.generic.dateTemplate": "\\date {date}",
+        "doxdocgen.generic.paramTemplate": "\\param [inout] {param} ",
+        "doxdocgen.generic.returnTemplate": "\\return {type} ",
+        // some random and hopefully useful settings
+        "code-eol.color": "#666666",
+        "diffEditor.ignoreTrimWhitespace": false,
+        "explorer.autoReveal": false,
+        "files.trimTrailingWhitespace": true,
+        "git.confirmSync": false,
+        "git.ignoreWindowsGit27Warning": true,
+        "telemetry.telemetryLevel": "off",
+        "dev.containers.copyGitConfig": true
+      },
+      "extensions": [
+        "cschlosser.doxdocgen",
+        // `debug-tracker-vscode` is a dependency of `marus25.cortex-debug`
+        // when first building this container, you might have to reload it
+        "mcu-debug.debug-tracker-vscode",
+        "marus25.cortex-debug",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.vscode-embedded-tools",
+        "ms-vscode.vscode-serial-monitor",
+        // syntax highlighting for devicetree
+        "nordic-semiconductor.nrf-devicetree",
+        "sohamkamani.code-eol",
+        "trond-snekvik.gnu-mapfiles",
+        "wayou.vscode-todo-highlight",
+        "zixuanwang.linkerscript"
+      ]
+    }
+  },
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  // in case you're not bound to these restrictions, use the following settings
+  // "workspaceFolder": "/home/user/workspace",
+  // "workspaceMount": "source=${localWorkspaceFolder},target=/home/user/workspace,type=bind",
+  "onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh ${localWorkspaceFolder}"
+}

@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+  schedule:
+    - cron: '0 1 * * 0'
+
+jobs:
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        tuple:
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840' }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re'       }
+
+    runs-on: ubuntu-22.04
+    container:
+      # the image size of ci:v0.28.6 exceeds the limits used by GitHub actions
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.28.6
+    env:
+      CMAKE_PREFIX_PATH: /opt/toolchains
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # checks out to ${{ github.workspace }}.
+
+      - name: Initialize workspace
+        run: |
+          west init --local --mf ${{ matrix.tuple.manifest }}.yml ${{ matrix.tuple.app }}
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: cache-deps-${{ matrix.tuple.manifest }}-${{ hashFiles(format('workspace/{0}.yml', matrix.tuple.manifest)) }}
+
+      - name: Update workspace
+        run: |
+          west update -o=--depth=1 -n
+
+      - name: Install SDK
+        working-directory: deps/zephyr
+        run: |
+          west sdk install --toolchains ${{ matrix.tuple.toolchain }} --no-hosttools
+
+      - name: Build
+        run: |
+          west build --no-sysbuild --board ${{ matrix.tuple.board }} ${{ matrix.tuple.app }} --pristine

@@ -1,0 +1,16 @@
+.DS_Store
+.idea
+thumbs.db
+*.pyc
+.cache
+
+.west
+build
+**/build
+twister-out
+twister-out*
+
+# docs
+_doc
+**/doc/_build*
+artifacts

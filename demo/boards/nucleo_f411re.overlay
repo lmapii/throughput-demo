@@ -1,0 +1,13 @@
+/ {
+    chosen {
+    };
+
+    buttons: buttons {
+        compatible = "gpio-keys";
+        button0: button_0 {
+            label = "Push button switch 0";
+            gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+            zephyr,code = <INPUT_KEY_0>;
+        };
+    };
+};

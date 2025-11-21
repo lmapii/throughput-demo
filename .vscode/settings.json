@@ -1,0 +1,37 @@
+{
+  "editor.rulers": [80],
+  "[c]": {
+    "editor.rulers": [80],
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true
+  },
+  "[cpp]": {
+    "editor.rulers": [80],
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true
+  },
+  "[dockerfile]": {
+    "editor.rulers": [100]
+  },
+  "C_Cpp.clang_format_style": "file:${workspaceFolder}/.clang-format",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  // silence CMake
+  "cmake.configureOnOpen": false,
+  "files.associations": {
+    "*.doxyfile": "makefile",
+    "*.mak": "makefile",
+    "*.cccf": "makefile",
+    "*.spdf": "makefile",
+    "*.h": "c",
+    "*.ld": "c",
+    "*.clang-format": "yaml",
+    "*.clang-tidy": "yaml",
+    "*.tja": "cmm",
+    "*.men": "cmm",
+    "*.rest": "http",
+    "**/.west/config": "ini",
+    ".ignore": "ignore"
+  },
+  "git.ignoreLimitWarning": true,
+  "devicetree.zephyr": "${workspaceFolder}/deps/zephyr"
+}

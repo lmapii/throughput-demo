@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "cschlosser.doxdocgen",
+    "marus25.cortex-debug",
+    "ms-python.python",
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools",
+    "ms-vscode.vscode-embedded-tools",
+    "sohamkamani.code-eol",
+    "trond-snekvik.gnu-mapfiles",
+    "wayou.vscode-todo-highlight",
+    "zixuanwang.linkerscript"
+  ]
+}
