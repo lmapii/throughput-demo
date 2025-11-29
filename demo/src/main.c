@@ -7,7 +7,7 @@
 #include <zephyr/shell/shell.h>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(app, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(app, LOG_LEVEL_DBG);
 
 /*******************************************************************************
  * Definitions
@@ -58,6 +58,7 @@ static void prv_handle_button(int32_t const value)
     {
         light_is_on = !light_is_on;
         int ret     = gpio_pin_set_dt(&led0, light_is_on ? 1 : 0);
+        LOG_INF("led is %s", light_is_on ? "ON" : "OFF");
         __ASSERT_NO_MSG(ret >= 0);
     }
 }
@@ -67,7 +68,7 @@ static void prv_input_cb_buttons(struct input_event *evt, void *user_data)
     __ASSERT_NO_MSG(evt != NULL);
     (void) user_data;
 
-    LOG_DBG(
+    LOG_INF(
         "input device '%s', zephyr_code=%u, value=%d\n",
         evt->dev->name,
         evt->code,
