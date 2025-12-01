@@ -10,7 +10,12 @@ $ west init --local --manifest-file west-sdk-nrf.yml demo
 $ west update --narrow -o=--depth=1 && west zephyr-export
 $ pip install -r deps/zephyr/scripts/requirements.txt
 $ pip install --upgrade pip
+```
 
+
+# Building and flashing
+
+```bash
 # building, e.g., without sysbuild
 $ west build --no-sysbuild --board nrf52840dk/nrf52840 demo
 
