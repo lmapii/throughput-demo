@@ -170,10 +170,25 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error \
-            --header "X-API-Key: ${ECW_API_KEY}" \
-            --form "file=@${bin_files[0]}" \
-            "${ECW_BACKEND_URL%/}/upload?booking_id=${ECW_BOOKING_ID}"
+          # No --fail: keep the response body so backend errors show up in the log.
+          http_code="$(
+            curl --silent --show-error --output /tmp/upload-resp.txt \
+              --write-out '%{http_code}' \
+              --header "X-API-Key: ${ECW_API_KEY}" \
+              --form "file=@${bin_files[0]}" \
+              "${ECW_BACKEND_URL%/}/upload?booking_id=${ECW_BOOKING_ID}"
+          )"
+
+          cat /tmp/upload-resp.txt || true
+          echo
+          case "${http_code}" in
+            2??)
+              ;;
+            *)
+              echo "::error::upload returned HTTP ${http_code}"
+              exit 1
+              ;;
+          esac
 
   test:
     name: Test
