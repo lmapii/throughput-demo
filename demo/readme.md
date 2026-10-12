@@ -7,7 +7,7 @@ $ source .venv/bin/activate
 
 $ rm -rf build deps
 $ west init --local --manifest-file west-sdk-nrf.yml demo
-$ west update --narrow -o=--depth=1 && west zephyr-export
+$ west update --narrow --fetch-opt=--depth=1 && west zephyr-export
 $ pip install -r deps/zephyr/scripts/requirements.txt
 $ pip install --upgrade pip
 ```
