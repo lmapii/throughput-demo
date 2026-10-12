@@ -10,6 +10,14 @@ on:
   schedule:
     - cron: '0 1 * * 0'
 
+# a new push to a PR cancels that PR's superseded build-only runs. `ecw`-labeled runs
+# use their own group and are never cancelled: stage 1 may already have booked a
+# board, and a cancel there would leave the booking without a trigger or release.
+concurrency:
+  # one group per label, so unrelated (no-op) label runs can't displace a queued `ecw` run
+  group: ci-${{ github.ref }}-${{ github.event.action == 'labeled' && format('label-{0}', github.event.label.name) || 'build' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'labeled' }}
+
 jobs:
 
   build:
@@ -21,7 +29,8 @@ jobs:
         # ecw_board_name: ECW board (exact name, as listed by ECW) to run this build on;
         # the value '' means build only. Anchored, the ecw job reuses this list.
         tuple: &tuples
-          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: 'nRF52 DK (PCA10040)' }
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52dk/nrf52832',    ecw_board_name: 'nRF52 DK (PCA10040)' }
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: ''                    }
           - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re',       ecw_board_name: ''                    }
 
     runs-on: ubuntu-22.04
@@ -76,6 +85,17 @@ jobs:
           path: build/zephyr/zephyr.bin
           if-no-files-found: error
 
+  # TODO: one-off setup before the first `ecw`-labeled PR works:
+  #       - create the `ecw` label in the repository
+  #       - merge ci-job-trigger-stage2.yml to the default branch (ECW can only dispatch
+  #         workflows that exist there), in its current form (per-board artifact name)
+  #       - add the ECW_API_KEY and ECW_DISPATCH_PAT repository secrets
+  #       - delete ci-job-smoke.yml: it runs on pushes to `develop` and fails, since it
+  #         expects .github/user/build/build.sh
+  # TODO: `needs: build` waits for the whole matrix, so one failing build (even one
+  #       without an ecw_board_name) skips ECW for all boards.
+  # TODO: YAML anchors (&tuples / *tuples) are fairly new in GitHub Actions; if the
+  #       workflow is rejected, repeat the tuple list here instead.
   ecw:
     needs: build
     # only when the `ecw` label is added, and only for PRs from this repository:

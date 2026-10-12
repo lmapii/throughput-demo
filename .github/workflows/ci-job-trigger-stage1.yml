@@ -106,6 +106,9 @@ jobs:
           ECW_BOARD_NAME: ${{ steps.board.outputs.board_name }}
         run: python3 .github/scripts/find_or_create_booking.py
 
+      # TODO: a cancel between the booking above and this step leaves the booking with
+      #       neither a trigger nor a release (the next run reuses it, see
+      #       find_or_create_booking.py); add an `if: cancelled()` step that releases it.
       - name: Register session-activation trigger
         env:
           ECW_BOOKING_ID: ${{ steps.booking.outputs.booking_id }}
