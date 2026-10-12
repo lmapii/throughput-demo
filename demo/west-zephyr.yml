@@ -4,7 +4,7 @@ manifest:
   projects:
     # vanilla Zephyr
     - name: zephyr
-      revision: v4.3.0
+      revision: v4.4.2
       url: https://github.com/zephyrproject-rtos/zephyr
       import:
         path-prefix: deps

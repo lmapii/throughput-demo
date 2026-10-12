@@ -2,23 +2,42 @@ name: ci
 
 on:
   pull_request:
+    # "labeled" lets a reviewer start the ECW hardware stage by adding the `ecw` label
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
     - main
   schedule:
     - cron: '0 1 * * 0'
 
+# a new push to a PR cancels that PR's superseded build-only runs. `ecw`-labeled runs
+# use their own group and are never cancelled: stage 1 may already have booked a
+# board, and a cancel there would leave the booking without a trigger or release.
+concurrency:
+  # one group per label, so unrelated (no-op) label runs can't displace a queued `ecw` run
+  group: ci-${{ github.ref }}-${{ github.event.action == 'labeled' && format('label-{0}', github.event.label.name) || 'build' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'labeled' }}
+
 jobs:
 
   build:
+    # adding any label other than `ecw` must not rebuild
+    if: github.event.action != 'labeled' || github.event.label.name == 'ecw'
     strategy:
       fail-fast: false
       matrix:
-        tuple:
-          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840' }
-          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re'       }
+        # ecw_board_name: ECW board (exact name, as listed by ECW) to run this build on;
+        # the value '' means build only. Anchored, the ecw job reuses this list.
+        tuple: &tuples
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52dk/nrf52832',    ecw_board_name: 'nRF52 DK (PCA10040)' }
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: ''                    }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_c562re',       ecw_board_name: 'NUCLEO-C562RE'       }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re',       ecw_board_name: ''                    }
 
     runs-on: ubuntu-22.04
+    # GITHUB_TOKEN is handed to `west sdk install`; it only needs to read
+    permissions:
+      contents: read
     container:
       # the image size of ci:v0.28.6 exceeds the limits used by GitHub actions
       image: ghcr.io/zephyrproject-rtos/ci-base:v0.28.6
@@ -26,7 +45,7 @@ jobs:
       CMAKE_PREFIX_PATH: /opt/toolchains
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         # checks out to ${{ github.workspace }}.
 
       - name: Initialize workspace
@@ -35,7 +54,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: deps
           key: cache-deps-${{ matrix.tuple.manifest }}-${{ hashFiles(format('workspace/{0}.yml', matrix.tuple.manifest)) }}
@@ -46,9 +65,60 @@ jobs:
 
       - name: Install SDK
         working-directory: deps/zephyr
+        env:
+          # authenticated, so the SDK release lookup isn't hit by the shared runner IP's API rate limit
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          west sdk install --toolchains ${{ matrix.tuple.toolchain }} --no-hosttools
+          west sdk install --toolchains ${{ matrix.tuple.toolchain }} --no-hosttools --personal-access-token "${GH_TOKEN}"
 
       - name: Build
         run: |
           west build --no-sysbuild --board ${{ matrix.tuple.board }} ${{ matrix.tuple.app }} --pristine
+
+      - name: Name ECW firmware artifact
+        id: ecw-artifact
+        if: matrix.tuple.ecw_board_name
+        env:
+          BOARD_NAME: ${{ matrix.tuple.ecw_board_name }}
+        run: |
+          echo "name=ecw-firmware-${{ github.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload ECW firmware artifact
+        if: matrix.tuple.ecw_board_name
+        uses: actions/upload-artifact@v7
+        with:
+          # name and flat layout (single .hex at the root) are what ci-job-trigger-stage2.yml expects
+          name: ${{ steps.ecw-artifact.outputs.name }}
+          path: build/zephyr/zephyr.hex
+          if-no-files-found: error
+
+  # TODO: one-off setup before the first `ecw`-labeled PR works:
+  #       - create the `ecw` label in the repository
+  #       - merge ci-job-trigger-stage2.yml to the default branch (ECW can only dispatch
+  #         workflows that exist there), in its current form (per-board artifact name)
+  #       - add the ECW_API_KEY and ECW_DISPATCH_PAT repository secrets
+  #       - delete ci-job-smoke.yml: it runs on pushes to `develop` and fails, since it
+  #         expects .github/user/build/build.sh
+  # TODO: `needs: build` waits for the whole matrix, so one failing build (even one
+  #       without an ecw_board_name) skips ECW for all boards.
+  # TODO: YAML anchors (&tuples / *tuples) are fairly new in GitHub Actions; if the
+  #       workflow is rejected, repeat the tuple list here instead.
+  ecw:
+    needs: build
+    # only when the `ecw` label is added, and only for PRs from this repository:
+    # PRs from forks don't get the ECW secrets
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'ecw' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        # stage 1 skips tuples with an empty ecw_board_name
+        tuple: *tuples
+    uses: ./.github/workflows/ci-job-trigger-stage1.yml
+    secrets: inherit
+    with:
+      board_name: ${{ matrix.tuple.ecw_board_name }}
+      # the PR's own branch; the default (`<pr>/merge`) cannot be dispatched to
+      active_ref: ${{ github.head_ref }}

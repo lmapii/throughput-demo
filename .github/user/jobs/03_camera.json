@@ -1,0 +1,15 @@
+{
+  "request_id": "gha-camera-001",
+  "name": "GitHub Actions camera job",
+  "duration_seconds": 10,
+  "commands": [
+    {
+      "id": "camera-shot",
+      "name": "Capture camera screenshot",
+      "command": "camera.screenshot",
+      "attempts": 1,
+      "timeout_ms": 5000,
+      "parameters": {"filename": "gha-frame.jpg"}
+    }
+  ]
+}
