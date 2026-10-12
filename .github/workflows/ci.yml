@@ -30,8 +30,9 @@ jobs:
         # the value '' means build only. Anchored, the ecw job reuses this list.
         tuple: &tuples
           - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52dk/nrf52832',    ecw_board_name: 'nRF52 DK (PCA10040)' }
-          # - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: ''                    }
-          # - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re',       ecw_board_name: ''                    }
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: ''                    }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_c562re',       ecw_board_name: 'NUCLEO-C562RE'       }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re',       ecw_board_name: ''                    }
 
     runs-on: ubuntu-22.04
     container:
