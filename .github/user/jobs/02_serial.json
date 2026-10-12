@@ -8,7 +8,7 @@
       "name": "MCU serial capture",
       "command": "mcu.serial_log",
       "attempts": 1,
-      "timeout_ms": 2000,
+      "timeout_ms": 4000,
       "parameters": {"filename": "gha-mcu.log"}
     },
     {
@@ -16,7 +16,7 @@
       "name": "MPU serial capture",
       "command": "mpu.serial_log",
       "attempts": 1,
-      "timeout_ms": 2000,
+      "timeout_ms": 4000,
       "parameters": {"filename": "gha-mpu.log"}
     }
   ]
