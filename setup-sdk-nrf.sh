@@ -9,9 +9,9 @@ fi
 
 echo "Setting up toolchain paths."
 
-# SDK/toolchain for sdk-nrf 3.1.1
+# SDK/toolchain for sdk-nrf 3.4.1
 ncs_install_dir="${ncs_install_dir:-/opt/nordic/ncs}"
-ncs_bin_version="${ncs_bin_version:-561dce9adf}"
+ncs_bin_version="${ncs_bin_version:-97226bad62}"
 
 paths=(
     $ncs_install_dir/toolchains/$ncs_bin_version/bin
