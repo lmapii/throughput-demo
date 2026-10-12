@@ -15,7 +15,13 @@ from ecw_client import request_bytes  # noqa: E402
 def main() -> None:
     backend_url = os.environ["ECW_BACKEND_URL"].rstrip("/")
     api_key = os.environ["ECW_API_KEY"]
-    job_ids = json.loads(os.environ["ECW_CI_JOB_IDS"])
+    # Unset when create_jobs.py failed before creating any job; this step
+    # runs under always(), so don't bury that failure under a KeyError.
+    job_ids_json = os.environ.get("ECW_CI_JOB_IDS")
+    if not job_ids_json:
+        print("ECW_CI_JOB_IDS is not set (no CI jobs were created); nothing to download.")
+        return
+    job_ids = json.loads(job_ids_json)
     artifact_dir = Path("artifacts")
     artifact_dir.mkdir(exist_ok=True)
 

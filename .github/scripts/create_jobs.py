@@ -65,8 +65,9 @@ def main() -> None:
 
         job_ids[label] = job_id
         print(f"Created {label} CI job: {job_id}")
-
-    write_github_env("ECW_CI_JOB_IDS", json.dumps(job_ids))
+        # Re-export after every job (last write wins) so a failure creating a
+        # later job still leaves the earlier ones visible to download_artifacts.py.
+        write_github_env("ECW_CI_JOB_IDS", json.dumps(job_ids))
 
 
 if __name__ == "__main__":
