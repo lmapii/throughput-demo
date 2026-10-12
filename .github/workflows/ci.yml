@@ -18,11 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # board_name: ECW board (exact name, as listed by ECW) to run this build on;
-        # tuples without it are only built. Anchored, the ecw job reuses this list.
+        # ecw_board_name: ECW board (exact name, as listed by ECW) to run this build on;
+        # the value '' means build only. Anchored, the ecw job reuses this list.
         tuple: &tuples
-          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', board_name: 'nRF52 DK (PCA10040)' }
-          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re'                                          }
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', ecw_board_name: 'nRF52 DK (PCA10040)' }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re',       ecw_board_name: ''                    }
 
     runs-on: ubuntu-22.04
     container:
@@ -61,14 +61,14 @@ jobs:
 
       - name: Name ECW firmware artifact
         id: ecw-artifact
-        if: matrix.tuple.board_name
+        if: matrix.tuple.ecw_board_name
         env:
-          BOARD_NAME: ${{ matrix.tuple.board_name }}
+          BOARD_NAME: ${{ matrix.tuple.ecw_board_name }}
         run: |
           echo "name=ecw-firmware-${{ github.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
 
       - name: Upload ECW firmware artifact
-        if: matrix.tuple.board_name
+        if: matrix.tuple.ecw_board_name
         uses: actions/upload-artifact@v4
         with:
           # name and flat layout (single .bin at the root) are what ci-job-trigger-stage2.yml expects
@@ -87,11 +87,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # stage 1 skips tuples without a board_name
+        # stage 1 skips tuples with an empty ecw_board_name
         tuple: *tuples
     uses: ./.github/workflows/ci-job-trigger-stage1.yml
     secrets: inherit
     with:
-      board_name: ${{ matrix.tuple.board_name || '' }}
+      board_name: ${{ matrix.tuple.ecw_board_name }}
       # the PR's own branch; the default (`<pr>/merge`) cannot be dispatched to
       active_ref: ${{ github.head_ref }}
