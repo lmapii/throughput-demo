@@ -57,6 +57,10 @@ on:
       backend_url:
         description: ECW backend base URL
         required: true
+  # TODO: remove once this file is on the default branch. Until then GitHub only
+  #       accepts the workflow_dispatch from ECW after the workflow has run once
+  #       via some other event; every job is skipped for this event (see `claim`).
+  pull_request:
 
 # actions: read lets the Upload job fetch Stage 1's firmware artifact by run id.
 permissions:
@@ -72,6 +76,8 @@ env:
 jobs:
   claim:
     name: Claim run
+    # skips the registration-only pull_request run, and with it every other job
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
