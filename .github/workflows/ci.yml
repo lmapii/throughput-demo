@@ -2,6 +2,8 @@ name: ci
 
 on:
   pull_request:
+    # "labeled" lets a reviewer start the ECW hardware stage by adding the `ecw` label
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
     - main
@@ -11,12 +13,16 @@ on:
 jobs:
 
   build:
+    # adding any label other than `ecw` must not rebuild
+    if: github.event.action != 'labeled' || github.event.label.name == 'ecw'
     strategy:
       fail-fast: false
       matrix:
-        tuple:
-          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840' }
-          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re'       }
+        # board_name: ECW board (exact name, as listed by ECW) to run this build on;
+        # tuples without it are only built. Anchored, the ecw job reuses this list.
+        tuple: &tuples
+          - { app: 'demo', manifest: 'west-sdk-nrf', toolchain: 'arm-zephyr-eabi', board: 'nrf52840dk/nrf52840', board_name: 'nRF52 DK (PCA10040)' }
+          - { app: 'demo', manifest: 'west-zephyr',  toolchain: 'arm-zephyr-eabi', board: 'nucleo_f411re'                                          }
 
     runs-on: ubuntu-22.04
     container:
@@ -52,3 +58,40 @@ jobs:
       - name: Build
         run: |
           west build --no-sysbuild --board ${{ matrix.tuple.board }} ${{ matrix.tuple.app }} --pristine
+
+      - name: Name ECW firmware artifact
+        id: ecw-artifact
+        if: matrix.tuple.board_name
+        env:
+          BOARD_NAME: ${{ matrix.tuple.board_name }}
+        run: |
+          echo "name=ecw-firmware-${{ github.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload ECW firmware artifact
+        if: matrix.tuple.board_name
+        uses: actions/upload-artifact@v4
+        with:
+          # name and flat layout (single .bin at the root) are what ci-job-trigger-stage2.yml expects
+          name: ${{ steps.ecw-artifact.outputs.name }}
+          path: build/zephyr/zephyr.bin
+          if-no-files-found: error
+
+  ecw:
+    needs: build
+    # only when the `ecw` label is added, and only for PRs from this repository:
+    # PRs from forks don't get the ECW secrets
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'ecw' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        # stage 1 skips tuples without a board_name
+        tuple: *tuples
+    uses: ./.github/workflows/ci-job-trigger-stage1.yml
+    secrets: inherit
+    with:
+      board_name: ${{ matrix.tuple.board_name || '' }}
+      # the PR's own branch; the default (`<pr>/merge`) cannot be dispatched to
+      active_ref: ${{ github.head_ref }}

@@ -33,5 +33,11 @@
     ".ignore": "ignore"
   },
   "git.ignoreLimitWarning": true,
-  "devicetree.zephyr": "${workspaceFolder}/deps/zephyr"
+  "cmake.sourceDirectory": "/Users/martin/Documents/code/zephyr/throughput-demo-0/demo",
+  // "devicetree.zephyr": "${workspaceFolder}/deps/zephyr",
+  // "nrf-connect.applications": [
+  //   "${workspaceFolder}/demo"
+  // ],
+  // "kconfig.zephyr.base": "${nrf-connect.sdk:2.4.0}",
+  "python.defaultInterpreterPath": "/opt/python/venv/bin/python"
 }

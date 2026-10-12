@@ -1,0 +1,231 @@
+name: ECW CI Trigger - Stage 2 (Active Session)
+
+# Event-driven alternative to ci-job-smoke.yml, 2 of 2 -- see
+# docs/07-trigger-mode.md before enabling this.
+#
+# ECW fires this workflow via the workflow_dispatch REST API the moment the
+# booking reserved by "Stage 1" becomes active. ECW injects the booking
+# context (booking_id, board_*, starts_at, ends_at, activation_nonce);
+# Stage 1's register step (register_activation_trigger.py) adds
+# run_id / sha / backend_url so this run can pull Stage 1's firmware
+# artifact, check out the same commit, and reach the same backend.
+#
+# NOTE: for the workflow_dispatch REST API to accept the call, this file
+# must exist on the repository's default branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      booking_id:
+        description: ECW booking id (injected by ECW)
+        required: true
+      board_id:
+        description: Board id (injected by ECW)
+        required: false
+        default: ""
+      board_type_id:
+        description: Board type id (injected by ECW)
+        required: false
+        default: ""
+      board_name:
+        description: Board name (injected by ECW)
+        required: false
+        default: ""
+      starts_at:
+        description: Session start, ISO-8601 (injected by ECW)
+        required: false
+        default: ""
+      ends_at:
+        description: Session end, ISO-8601 (injected by ECW)
+        required: false
+        default: ""
+      activation_nonce:
+        description: >-
+          One-time claim token (injected by ECW). GitHub's workflow_dispatch
+          has no delivery idempotency key, so ECW can legitimately dispatch
+          the same logical trigger more than once (e.g. reclaiming a
+          dispatch it lost track of after a crash); every such duplicate
+          carries this same value. The Claim job calls back into ECW to
+          claim it -- only the first run to do so proceeds past that job.
+        required: true
+      run_id:
+        description: Stage 1 run id that built the firmware
+        required: true
+      sha:
+        description: Commit the firmware was built from
+        required: true
+      backend_url:
+        description: ECW backend base URL
+        required: true
+
+# actions: read lets the Upload job fetch Stage 1's firmware artifact by run id.
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ECW_BACKEND_URL: ${{ inputs.backend_url }}
+  ECW_BOOKING_ID: ${{ inputs.booking_id }}
+  ECW_BOARD_NAME: ${{ inputs.board_name }}
+  ECW_JOB_WAIT_TIMEOUT_SECONDS: ${{ vars.ECW_JOB_WAIT_TIMEOUT_SECONDS || '180' }}
+
+jobs:
+  claim:
+    name: Claim run
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      claimed: ${{ steps.claim.outputs.claimed }}
+    steps:
+      - name: Claim this trigger's single execution slot
+        id: claim
+        run: |
+          set -uo pipefail
+
+          http_code="$(
+            curl --silent --show-error --max-time 30 --output /tmp/claim-resp.txt \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "Content-Type: application/json" \
+              --data "{\"nonce\": \"${{ inputs.activation_nonce }}\"}" \
+              "${ECW_BACKEND_URL%/}/v1/ci/bookings/${ECW_BOOKING_ID}/activation-trigger/claim-run"
+          )"
+
+          case "${http_code}" in
+            204)
+              echo "Claimed -- this is the run that does the real work."
+              echo "claimed=true" >> "$GITHUB_OUTPUT"
+              ;;
+            409)
+              echo "Already claimed by another run (expected for a duplicate dispatch)."
+              cat /tmp/claim-resp.txt || true
+              echo "claimed=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::claim-run returned unexpected HTTP ${http_code}"
+              cat /tmp/claim-resp.txt || true
+              exit 1
+              ;;
+          esac
+
+  upload:
+    name: Upload
+    runs-on: ubuntu-latest
+    needs: claim
+    if: needs.claim.outputs.claimed == 'true'
+    timeout-minutes: 10
+
+    env:
+      ECW_API_KEY: ${{ secrets.ECW_API_KEY }}
+
+    steps:
+      - name: Announce
+        run: |
+          echo "ECW activated the booked session and triggered Stage 2."
+          echo "  booking_id  = ${{ inputs.booking_id }}"
+          echo "  board_name  = ${{ inputs.board_name }}"
+          echo "  starts_at   = ${{ inputs.starts_at }}"
+          echo "  ends_at     = ${{ inputs.ends_at }}"
+          echo "  stage 1 run = ${{ inputs.run_id }}"
+
+      - name: Check out repository at the built commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      # must match the name ci.yml uploaded under
+      - name: Name firmware artifact
+        id: firmware-artifact
+        env:
+          BOARD_NAME: ${{ inputs.board_name }}
+        run: |
+          echo "name=ecw-firmware-${{ inputs.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
+
+      - name: Download firmware artifact from the Stage 1 run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.firmware-artifact.outputs.name }}
+          path: build
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Flash firmware to board
+        run: |
+          set -euo pipefail
+
+          # No hardcoded filename -- build.sh is free to name its output
+          # anything, as long as it leaves exactly one .bin in build/.
+          mapfile -t bin_files < <(find build -maxdepth 1 -name '*.bin')
+          if [ "${#bin_files[@]}" -eq 0 ]; then
+            echo "No .bin file found in build/ -- .github/user/build/build.sh must produce exactly one."
+            exit 1
+          elif [ "${#bin_files[@]}" -gt 1 ]; then
+            echo "Multiple .bin files found in build/, expected exactly one: ${bin_files[*]}"
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            --header "X-API-Key: ${ECW_API_KEY}" \
+            --form "file=@${bin_files[0]}" \
+            "${ECW_BACKEND_URL%/}/upload?booking_id=${ECW_BOOKING_ID}"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: [claim, upload]
+    if: needs.claim.outputs.claimed == 'true'
+    timeout-minutes: 15
+
+    env:
+      ECW_API_KEY: ${{ secrets.ECW_API_KEY }}
+
+    steps:
+      - name: Check out repository at the built commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Create CI jobs from .github/user/jobs/*.json
+        run: python3 .github/scripts/create_jobs.py
+
+      - name: Poll CI jobs and report results
+        run: python3 .github/scripts/poll_jobs.py
+
+      - name: Download CI job artifact bundles
+        if: always()
+        run: python3 .github/scripts/download_artifacts.py
+
+      - name: Upload CI job artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecw-ci-job-active-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [claim, upload, test]
+    # A run that lost the claim did none of this booking's work and must not
+    # release it out from under the run that is still doing that work.
+    if: always() && needs.claim.outputs.claimed == 'true'
+
+    env:
+      ECW_API_KEY: ${{ secrets.ECW_API_KEY }}
+
+    steps:
+      - name: Cancel booking
+        if: always()
+        run: |
+          set -uo pipefail
+
+          if [ -z "${ECW_BOOKING_ID:-}" ] || [ -z "${ECW_API_KEY:-}" ] || [ -z "${ECW_BACKEND_URL:-}" ]; then
+            echo "No booking / key / backend_url; skipping release."
+            exit 0
+          fi
+
+          curl --silent --show-error --max-time 30 \
+            --header "X-API-Key: ${ECW_API_KEY}" \
+            --get --data-urlencode "booking_id=${ECW_BOOKING_ID}" \
+            "${ECW_BACKEND_URL%/}/cancel-booking" || echo "release call failed (ignored)"

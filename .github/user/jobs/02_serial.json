@@ -1,0 +1,23 @@
+{
+  "request_id": "gha-serial-001",
+  "name": "GitHub Actions serial job",
+  "duration_seconds": 10,
+  "commands": [
+    {
+      "id": "mcu-serial",
+      "name": "MCU serial capture",
+      "command": "mcu.serial_log",
+      "attempts": 1,
+      "timeout_ms": 2000,
+      "parameters": {"filename": "gha-mcu.log"}
+    },
+    {
+      "id": "mpu-serial",
+      "name": "MPU serial capture",
+      "command": "mpu.serial_log",
+      "attempts": 1,
+      "timeout_ms": 2000,
+      "parameters": {"filename": "gha-mpu.log"}
+    }
+  ]
+}
