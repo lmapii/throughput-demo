@@ -12,7 +12,7 @@ name: ECW CI Trigger - Stage 1 (Reserve)
 #
 # Reusable workflow, called from ci.yml after its build. It has no build of
 # its own: the caller must upload the firmware as artifact
-# `ecw-firmware-<run_id>-<board_name>` (a single .bin at the artifact root).
+# `ecw-firmware-<run_id>-<board_name>` (a single .hex at the artifact root).
 # A called workflow shares the caller's run_id/sha, which is what Stage 2
 # uses to find that artifact.
 #

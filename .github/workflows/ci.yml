@@ -80,9 +80,9 @@ jobs:
         if: matrix.tuple.ecw_board_name
         uses: actions/upload-artifact@v4
         with:
-          # name and flat layout (single .bin at the root) are what ci-job-trigger-stage2.yml expects
+          # name and flat layout (single .hex at the root) are what ci-job-trigger-stage2.yml expects
           name: ${{ steps.ecw-artifact.outputs.name }}
-          path: build/zephyr/zephyr.bin
+          path: build/zephyr/zephyr.hex
           if-no-files-found: error
 
   # TODO: one-off setup before the first `ecw`-labeled PR works:

@@ -160,13 +160,13 @@ jobs:
           set -euo pipefail
 
           # No hardcoded filename -- build.sh is free to name its output
-          # anything, as long as it leaves exactly one .bin in build/.
-          mapfile -t bin_files < <(find build -maxdepth 1 -name '*.bin')
-          if [ "${#bin_files[@]}" -eq 0 ]; then
-            echo "No .bin file found in build/ -- .github/user/build/build.sh must produce exactly one."
+          # anything, as long as it leaves exactly one .hex in build/.
+          mapfile -t hex_files < <(find build -maxdepth 1 -name '*.hex')
+          if [ "${#hex_files[@]}" -eq 0 ]; then
+            echo "No .hex file found in build/ -- .github/user/build/build.sh must produce exactly one."
             exit 1
-          elif [ "${#bin_files[@]}" -gt 1 ]; then
-            echo "Multiple .bin files found in build/, expected exactly one: ${bin_files[*]}"
+          elif [ "${#hex_files[@]}" -gt 1 ]; then
+            echo "Multiple .hex files found in build/, expected exactly one: ${hex_files[*]}"
             exit 1
           fi
 
@@ -175,7 +175,7 @@ jobs:
             curl --silent --show-error --output /tmp/upload-resp.txt \
               --write-out '%{http_code}' \
               --header "X-API-Key: ${ECW_API_KEY}" \
-              --form "file=@${bin_files[0]}" \
+              --form "file=@${hex_files[0]}" \
               "${ECW_BACKEND_URL%/}/upload?booking_id=${ECW_BOOKING_ID}"
           )"
 
