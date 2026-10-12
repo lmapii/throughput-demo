@@ -56,7 +56,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # first, so the always() upload at the end has a name even if a later step fails
       - name: Name reserve artifact
@@ -118,7 +118,7 @@ jobs:
 
       - name: Upload reserve artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.reserve-artifact.outputs.name || format('ecw-ci-trigger-reserve-{0}', github.run_id) }}
           path: artifacts/

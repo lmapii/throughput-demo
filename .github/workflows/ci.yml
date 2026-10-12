@@ -41,7 +41,7 @@ jobs:
       CMAKE_PREFIX_PATH: /opt/toolchains
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         # checks out to ${{ github.workspace }}.
 
       - name: Initialize workspace
@@ -50,7 +50,7 @@ jobs:
 
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: deps
           key: cache-deps-${{ matrix.tuple.manifest }}-${{ hashFiles(format('workspace/{0}.yml', matrix.tuple.manifest)) }}
@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload ECW firmware artifact
         if: matrix.tuple.ecw_board_name
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # name and flat layout (single .hex at the root) are what ci-job-trigger-stage2.yml expects
           name: ${{ steps.ecw-artifact.outputs.name }}

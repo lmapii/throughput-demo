@@ -135,7 +135,7 @@ jobs:
           echo "  stage 1 run = ${{ inputs.run_id }}"
 
       - name: Check out repository at the built commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
 
@@ -148,7 +148,7 @@ jobs:
           echo "name=ecw-firmware-${{ inputs.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
 
       - name: Download firmware artifact from the Stage 1 run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ steps.firmware-artifact.outputs.name }}
           path: build
@@ -202,7 +202,7 @@ jobs:
 
     steps:
       - name: Check out repository at the built commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
 
@@ -218,7 +218,7 @@ jobs:
 
       - name: Upload CI job artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ecw-ci-job-active-${{ github.run_id }}
           path: artifacts/
