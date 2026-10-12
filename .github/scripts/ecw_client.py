@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -32,8 +33,14 @@ def request_json(
         headers["Content-Type"] = "application/json"
 
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        # The backend explains 4xx rejections in the body; without it the CI
+        # log only shows "Bad Request".
+        detail = error.read().decode("utf-8", errors="replace")
+        raise SystemExit(f"{method} {url} failed with HTTP {error.code}: {detail}") from error
 
 
 def request_bytes(url: str, api_key: str, *, timeout: float = 30) -> bytes:
