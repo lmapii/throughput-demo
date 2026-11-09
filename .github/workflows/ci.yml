@@ -3,7 +3,8 @@ name: ci
 on:
   pull_request:
     # "labeled" lets a reviewer start the ECW hardware stage by adding the `ecw` label
-    types: [opened, synchronize, reopened, labeled]
+    # types: [opened, synchronize, reopened, labeled]
+    types: [labeled]
   push:
     branches:
     - main
