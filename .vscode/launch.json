@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Attaches to a running GDB debug server using `cppdbg`.
+      "name": "Attach to GDB debug server (cppdbg)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/zephyr/zephyr.elf",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/opt/toolchains/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb",
+      "miDebuggerServerAddress": "10.201.0.1:44239",
+      "externalConsole": false,
+      "stopAtConnect": false,
+      "postRemoteConnectCommands": [
+        // Reset like a fresh launch instead of a pure attach:
+        { "text": "monitor reset", "ignoreFailures": true },
+        { "text": "load" },
+        // Emulates "runToEntryPoint": "main": set a temporary breakpoint and continue
+        // { "text": "tbreak main", "ignoreFailures": true }
+      ],
+      "launchCompleteCommand": "exec-continue"
+    },
+    {
+      // Attaches to a running GDB debug server using `cortex-debug`.
+      "name": "Attach to GDB debug server for nRF52832 (cortex-debug)",
+      "device": "nRF52832_xxAA",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+      "request": "attach",
+      "type": "cortex-debug",
+      "runToEntryPoint": "main",
+      // "servertype": "jlink",
+      // using the servertype 'external' attaches to a running debugserver
+      // the default listening port used by `west debugserver` is 2331
+      // when using edgebench, this gdbTargetPath changes each time a new connection is established.
+      "servertype": "external",
+      "gdbTarget": "10.201.0.1:41463",
+      "gdbPath": "/opt/toolchains/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
+    }
+  ]
+}

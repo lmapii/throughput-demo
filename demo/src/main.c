@@ -13,6 +13,8 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_DBG);
  * Definitions
  ******************************************************************************/
 
+#define SLEEP_TIME_MS 1000U
+
 #define DT_PROP_OR_EMPTY(node_id, prop) \
     COND_CODE_1(DT_NODE_HAS_PROP(node_id, prop), (DT_PROP(node_id, prop), ), ())
 
@@ -86,6 +88,9 @@ static void prv_input_cb_buttons(struct input_event *evt, void *user_data)
 int main(void)
 {
     (void) buttons_dev;
+    bool tick = true;
+
+    printk("running demo built for board %s\n", CONFIG_BOARD_TARGET);
 
     bool ready = gpio_is_ready_dt(&led0);
     __ASSERT_NO_MSG(ready);
@@ -99,6 +104,17 @@ int main(void)
     while (1)
     {
         k_msleep(1000U);
+        (void) k_msleep(SLEEP_TIME_MS);
+
+        if (tick != false)
+        {
+            printk("Tick\n");
+        }
+        else
+        {
+            printk("Tock\n");
+        }
+        tick = !tick;
     }
 }
 
