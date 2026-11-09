@@ -1,4 +1,10 @@
 name: ECW CI Trigger - Stage 2 (Active Session)
+# shown in the run list instead of the workflow name; the registration-only
+# pull_request run has no inputs and keeps the plain title
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch'
+      && format('ECW Stage 2: {0} (booking {1}, run {2})', inputs.board_name, inputs.booking_id, inputs.run_id)
+      || 'ECW CI Trigger - Stage 2 (registration)' }}
 
 # Event-driven alternative to ci-job-smoke.yml, 2 of 2 -- see
 # docs/07-trigger-mode.md before enabling this.
@@ -134,6 +140,17 @@ jobs:
           echo "  ends_at     = ${{ inputs.ends_at }}"
           echo "  stage 1 run = ${{ inputs.run_id }}"
 
+          {
+            echo "### ECW session: ${{ inputs.board_name }}"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Board | ${{ inputs.board_name }} |"
+            echo "| Booking | ${{ inputs.booking_id }} |"
+            echo "| Session | ${{ inputs.starts_at }} → ${{ inputs.ends_at }} |"
+            echo "| Firmware from | [run ${{ inputs.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ inputs.run_id }}) @ \`${{ inputs.sha }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check out repository at the built commit
         uses: actions/checkout@v7
         with:
@@ -216,11 +233,19 @@ jobs:
         if: always()
         run: python3 .github/scripts/download_artifacts.py
 
+      - name: Name CI job artifact
+        id: job-artifact
+        if: always()
+        env:
+          BOARD_NAME: ${{ inputs.board_name }}
+        run: |
+          echo "name=ecw-ci-job-active-${{ github.run_id }}-$(sh .github/scripts/artifact_safe.sh "${BOARD_NAME}")" >> "$GITHUB_OUTPUT"
+
       - name: Upload CI job artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ecw-ci-job-active-${{ github.run_id }}
+          name: ${{ steps.job-artifact.outputs.name || format('ecw-ci-job-active-{0}', github.run_id) }}
           path: artifacts/
           if-no-files-found: warn
 
