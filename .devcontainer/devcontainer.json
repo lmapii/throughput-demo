@@ -1,6 +1,18 @@
 {
   "name": "throughput-demo",
-  "image": "ghcr.io/zephyrproject-rtos/zephyr-build:main",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:Europe/Rome}",
+      "CLAUDE_CODE_VERSION": "latest",
+      "NODE_VERSION": "22",
+      "ENABLE_FZF_KEYBINDINGS": "true",
+      "USERNAME": "user",
+      // needs to match `workspaceFolder`, see the `_artifacts` PATH in the Dockerfile
+      "WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+      "BASE_IMAGE": "ghcr.io/zephyrproject-rtos/zephyr-build:main"
+    }
+  },
   "remoteUser": "user",
   "customizations": {
     "vscode": {
@@ -27,30 +39,36 @@
         "dev.containers.copyGitConfig": true
       },
       "extensions": [
-        "cschlosser.doxdocgen",
         // `debug-tracker-vscode` is a dependency of `marus25.cortex-debug`
         // when first building this container, you might have to reload it
         "mcu-debug.debug-tracker-vscode",
         "marus25.cortex-debug",
+        "mcu-debug.rtos-views",
+        "cschlosser.doxdocgen",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
-        "ms-vscode.vscode-embedded-tools",
         "ms-vscode.vscode-serial-monitor",
         // syntax highlighting for devicetree
         "nordic-semiconductor.nrf-devicetree",
         "sohamkamani.code-eol",
         "trond-snekvik.gnu-mapfiles",
         "wayou.vscode-todo-highlight",
-        "zixuanwang.linkerscript"
+        "zixuanwang.linkerscript",
+        "anthropic.claude-code"
       ]
     }
   },
+  "remoteEnv": {
+    "PATH": "${containerWorkspaceFolder}/_artifacts:${containerEnv:PATH}"
+  },
   "workspaceFolder": "${localWorkspaceFolder}",
   "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "runArgs": ["--device=/dev/net/tun", "--cap-add=NET_ADMIN"],
   // in case you're not bound to these restrictions, use the following settings
   // "workspaceFolder": "/home/user/workspace",
   // "workspaceMount": "source=${localWorkspaceFolder},target=/home/user/workspace,type=bind",
-  "onCreateCommand": "bash -i ${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh ${localWorkspaceFolder}"
+  "postAttachCommand": "bash \"${containerWorkspaceFolder}/.devcontainer/postAttachCommand.sh\"",
+  "onCreateCommand": "bash -i \"${containerWorkspaceFolder}/.devcontainer/onCreateCommand.sh\" \"${localWorkspaceFolder}\""
 }

@@ -10,6 +10,11 @@ $ west init --local --manifest-file west-sdk-nrf.yml demo
 $ west update --narrow --fetch-opt=--depth=1 && west zephyr-export
 $ pip install -r deps/zephyr/scripts/requirements.txt
 $ pip install --upgrade pip
+
+# switching to west-zephyr.yml
+$ rm -rf build deps
+$ west config manifest.file west-zephyr.yml
+$ west update --narrow --fetch-opt=--depth=1 && west zephyr-export
 ```
 
 
@@ -18,6 +23,8 @@ $ pip install --upgrade pip
 ```bash
 # building, e.g., without sysbuild
 $ west build --no-sysbuild --board nrf52840dk/nrf52840 demo
+# $ west build --no-sysbuild --board nrf52dk/nrf52832 demo
+# $ west build --no-sysbuild --board nucleo_c562re demo
 
 # debugging
 $ west debugserver --skip-rebuild

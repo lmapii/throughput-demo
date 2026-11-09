@@ -39,5 +39,6 @@
   //   "${workspaceFolder}/demo"
   // ],
   // "kconfig.zephyr.base": "${nrf-connect.sdk:2.4.0}",
-  "python.defaultInterpreterPath": "/opt/python/venv/bin/python"
+  "python.defaultInterpreterPath": "/opt/python/venv/bin/python",
+  "edgebench.mcuDebugGdbPath": "/opt/toolchains/zephyr-sdk-1.0.1/gnu/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
 }

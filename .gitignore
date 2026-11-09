@@ -14,3 +14,9 @@ twister-out*
 _doc
 **/doc/_build*
 artifacts
+
+_artifacts/*
+!_artifacts/.gitkeep
+
+_vsix/*
+!_vsix/.gitkeep
