@@ -207,6 +207,30 @@ jobs:
               ;;
           esac
 
+          # /upload only stores the file; flashing is a separate call that takes
+          # the uploaded filename as `code`
+          code="$(basename "${hex_files[0]}")"
+          echo "Flashing ${code} ..."
+          http_code="$(
+            curl --silent --show-error --output /tmp/flash-resp.txt \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "X-API-Key: ${ECW_API_KEY}" \
+              --get --data-urlencode "booking_id=${ECW_BOOKING_ID}" --data-urlencode "code=${code}" \
+              "${ECW_BACKEND_URL%/}/v1/artifacts/my-uploads"
+          )"
+
+          cat /tmp/flash-resp.txt || true
+          echo
+          case "${http_code}" in
+            2??)
+              ;;
+            *)
+              echo "::error::flash returned HTTP ${http_code}"
+              exit 1
+              ;;
+          esac
+
   test:
     name: Test
     runs-on: ubuntu-latest

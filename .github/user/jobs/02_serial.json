@@ -10,14 +10,6 @@
       "attempts": 1,
       "timeout_ms": 4000,
       "parameters": {"filename": "gha-mcu.log"}
-    },
-    {
-      "id": "mpu-serial",
-      "name": "MPU serial capture",
-      "command": "mpu.serial_log",
-      "attempts": 1,
-      "timeout_ms": 4000,
-      "parameters": {"filename": "gha-mpu.log"}
     }
   ]
 }

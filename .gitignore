@@ -20,3 +20,6 @@ _artifacts/*
 
 _vsix/*
 !_vsix/.gitkeep
+
+_results/*
+!_results/.gitkeep
