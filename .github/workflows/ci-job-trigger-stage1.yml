@@ -104,6 +104,9 @@ jobs:
         id: booking
         env:
           ECW_BOARD_NAME: ${{ steps.board.outputs.board_name }}
+          ECW_BOARD_TYPE_ID: ${{ steps.board.outputs.board_type_id }}
+          # while the board is occupied, how far ahead an existing (or the next free) booking may start
+          ECW_BOOKING_MAX_LEAD_MINUTES: ${{ vars.ECW_BOOKING_MAX_LEAD_MINUTES || '60' }}
         run: python3 .github/scripts/find_or_create_booking.py
 
       # TODO: a cancel between the booking above and this step leaves the booking with

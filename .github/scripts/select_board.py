@@ -52,6 +52,7 @@ def main() -> None:
         raise SystemExit("Selected board type did not include board_name.")
 
     write_github_output("board_name", board_name)
+    write_github_output("board_type_id", str(selected.get("id", "")))
     print(f"Selected board type: {board_name} (id: {selected.get('id')})")
 
 
